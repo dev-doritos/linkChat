@@ -1,0 +1,19 @@
+server:
+  port: 3000
+  servlet:
+    encoding:
+      charset: UTF-8
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 2048MB
+      max-request-size: 2048MB
+
+service:
+  name: 링크챗
+  name-ko: 링크챗
+  name-en: LinkChat
+  upload-directory: D:\linkchat\upload\
+  images: png,jpg,jpeg,gif
+  auto-room: Y

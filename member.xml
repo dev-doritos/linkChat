@@ -1,0 +1,19 @@
+<!--
+* 작성 요령
+<memberList>
+    <member>
+        <ip></ip>                   # 회원의 ip를 기재
+        <name></name>               # 회원의 이름을 기재
+        <teamId></teamId>           # 회원의 소속 teamId ID를 기재(team.xml 참조)
+        <partValue></partValue>     # 회원의 소속 partValue를 기재(team.xml 참조)
+    </member>
+</memberList>
+ -->
+<memberList>
+    <member>
+        <ip>0:0:0:0:0:0:0:1</ip>
+        <name>익명의돌고래</name>
+        <teamId>DEV</teamId>
+        <partValue>백엔드</partValue>
+    </member>
+</memberList>

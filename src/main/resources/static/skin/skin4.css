@@ -1,0 +1,36 @@
+/* 레트로 픽셀 아트 */
+#viewElement {
+    background-color: #000;
+    border: 4px solid #00ff00;
+    padding: 10px;
+    font-family: 'Press Start 2P', cursive; /* 픽셀 아트 느낌을 주는 글꼴 */
+    margin: auto;
+    color: #00ff00;
+    text-transform: uppercase;
+}
+
+#viewElement p {
+    background-color: #000;
+    border: 2px dashed #00ff00;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#viewElement p:nth-child(odd) {
+    background-color: #001f00;
+}
+
+#viewElement span {
+    display: block;
+    font-size: 12px;
+}
+
+#viewElement span:first-child {
+    font-weight: bold;
+    color: #00ff00;
+}
+
+#viewElement span:last-child {
+    margin-top: 5px;
+    color: #00ff00;
+}

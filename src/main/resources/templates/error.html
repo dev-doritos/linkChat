@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body></body><body>
+	<h2>Error</h2>
+	<h4 th:text="${message}"></h4>
+	
+	<script th:inline="javascript">
+		const message = /*[[${message}]]*/ '';
+// 		alert(message);
+	</script>
+</body>
+</html>

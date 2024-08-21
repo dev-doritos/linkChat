@@ -1,0 +1,31 @@
+<!--
+* 작성 요령
+<teamList>
+    <team>
+        <id></id>                   # Team ID(영문을 추천) 를 기재 : e.g) DEV
+        <name></name>               # Team 명을 기재 : e.g) 개발팀
+        <partList>
+            <part>
+                <value></value>     # Team 내 Part value 를 기재 : e.g) BACKEND
+            </part>
+            <part>
+                <value></value>     # Team 내 Part value 를 기재 : e.g) FRONTEND
+            </part>
+        </partList>
+    </team>
+</teamList>
+ -->
+<teamList>
+    <team>
+        <id>DEV</id>
+        <name>개발팀</name>
+        <partList>
+            <part>
+                <value>프론트엔드</value>
+            </part>
+            <part>
+                <value>백엔드</value>
+            </part>
+        </partList>
+    </team>
+</teamList>

@@ -1,0 +1,37 @@
+/* 다크모드 */
+#viewElement {
+    background-color: #2c2c2c;
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: 'Courier New', Courier, monospace;
+    margin: auto;
+    color: #f0f0f0;
+}
+
+#viewElement p {
+    background-color: #3c3c3c;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#viewElement p:nth-child(odd) {
+    background-color: #4c4c4c;
+}
+
+#viewElement span {
+    display: block;
+    font-size: 14px;
+}
+
+#viewElement span:first-child {
+    font-weight: bold;
+    color: #66ccff;
+}
+
+#viewElement span:last-child {
+    margin-top: 5px;
+    color: #e0e0e0;
+}

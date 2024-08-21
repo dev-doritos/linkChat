@@ -1,0 +1,38 @@
+/* 모던블루 */
+#viewElement {
+    background-color: #f0f8ff;
+    border: 2px solid #007acc;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    margin: auto;
+}
+
+#viewElement p {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#viewElement p:nth-child(odd) {
+    background-color: #e6f2ff;
+}
+
+#viewElement span {
+    display: block;
+    font-size: 14px;
+    color: #333;
+}
+
+#viewElement span:first-child {
+    font-weight: bold;
+    color: #007acc;
+}
+
+#viewElement span:last-child {
+    margin-top: 5px;
+    font-style: italic;
+    color: #444;
+}

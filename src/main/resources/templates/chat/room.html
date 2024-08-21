@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>링크챗</title>
+	<link th:href="@{/webjars/bootstrap/5.0.1/css/bootstrap.min.css}" rel="stylesheet">
+	<script>
+		// console.log = function() {}
+	</script>
+	<script th:src="@{/webjars/jquery/3.6.0/jquery.min.js}"></script>
+    <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+	<style>
+		.row{margin-bottom: 5px;}
+		#viewElement{border: 1px solid black;}
+		#viewElement p{font-size: 0.9em;}
+		#sendArea {font-size: 0.9em;}
+		.focus{background-color: seashell};
+	</style>
+</head>
+<body>
+	<div class="container-fluid" style="font-size: 0.9em; padding-left: 20px; padding-right: 20px;">
+		<div class="col">
+			<div class="row">
+				<table class="table" id="infoTable">
+					<colgroup>
+						<col style="width: 10%">
+						<col style="width: 90%">
+					</colgroup>
+					<tr>
+						<th>이름</th>
+						<td th:text="${chatRoom.name}"></td>
+					</tr>
+					<tr>
+						<th>🔒</th>
+						<td th:text="${chatRoom.accessType}"></td>
+					</tr>
+					<tr>
+						<th>인원</th>
+						<td>
+							<span th:each="memberEach : ${accessMemberList}" th:text="|#${memberEach.name} |"></span>
+						</td>
+					</tr>
+					<tr>
+						<th>👀</th>
+						<td></td>
+					</tr>
+					<tr>
+						<th>🔨</th>
+						<td>
+							<div th:if="${chatRoom.creator.ip == member.ip}" class="col-md-1" style="text-align: right">
+								<button type="button" id="updatePopupButton" class="btn btn-sm">⚙</button>
+							</div>
+							<button th:text="나가기" id="leaveButton" class="btn btn-sm btn-danger"></button>
+						</td>
+					</tr>
+					<tr>
+						<th>대화창 스킨</th>
+						<td>
+							<div class="btn-group" id="skinBtnGroup">
+								<button type="button" data-skin="skin1" class="me-2 btn btn-sm btn-light">가독성</button>
+								<button type="button" data-skin="skin2" class="me-2 btn btn-sm btn-primary">모던블루</button>
+								<button type="button" data-skin="skin3" class="me-2 btn btn-sm btn-secondary">다크모드</button>
+								<button type="button" data-skin="skin4" class="me-2 btn btn-sm btn-success">레트로픽셀 아트</button>
+								<button type="button" data-skin="" class="me-2 btn btn-sm btn-warning">기본</button>
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="container-fluid mb-3">
+				<div class="d-flex" id="chatRoomGroups">
+				</div>
+			</div>
+
+			<div class="row">
+				<div id="viewElement" style="width: 100%; height: 500px; overflow: scroll" title="해당영역에 파일을 드래그&드롭으로 업로드 할 수 있습니다."></div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-11">
+					<textarea id="sendArea" name="sendArea" class="form-control" rows="3"></textarea>
+				</div>
+				<div class="col-md-1">
+					<button class="btn btn-primary" id="sendButton" style="height: 100%; width: 90%;">전송</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<dialog id="updateDialog" style="width:850px; height:700px;">
+		<h5>채팅방 수정</h5>
+		<table class="table">
+			<tr>
+				<th>이름</th>
+				<td><input type="text" maxlength="20" name="name" class="form-control" th:value="${chatRoom.name}"></td>
+			</tr>
+			<tr>
+				<th>타입</th>
+				<td>
+					<span th:text="${chatRoom.accessType}"></span>
+				</td>
+			</tr>
+			<tr th:if="${chatRoom.accessType.code == 'PROTECTED'}">
+				<th>인원</th>
+				<td>
+					<p th:each="memberEach, num : ${memberList}" th:if="${memberEach.ip != member.ip}">
+						<input type="checkbox" th:id="|${num.index}_id|" name="access_member" th:value="${memberEach.ip}" class="form-check-input">
+						<label th:for="|${num.index}_id|" th:text="${memberEach.name}" class="form-check-label"></label>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th title="선택 시, 방에 입장한 회원이 이전 메시지 내역을 볼 수 있습니다.">메시지내역</th>
+				<td>
+					<input type="radio" name="logViewYn" id="logViewYn_Y" value="Y" class="form-check-input">
+					<label for="logViewYn_Y" class="form-check-label">사용</label>
+					<input type="radio" name="logViewYn" id="logViewYn_N" value="N" class="form-check-input">
+					<label for="logViewYn_N" class="form-check-label">미사용</label>
+				</td>
+			</tr>
+			<tr>
+				<th>활성화</th>
+				<td>
+					<input type="radio" name="status" id="status_y" value="Y" class="form-check-input">
+					<label for="status_y" class="form-check-label">활성</label>
+					<input type="radio" name="status" id="status_n" value="N" class="form-check-input">
+					<label for="status_n" class="form-check-label">비활성</label>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<div class="row">
+						<div class="col">
+							<button id="closePopButton" type="button" class="btn btn-danger" style="width: 100%;">닫기</button>
+						</div>
+						<div class="col">
+							<button id="updateButton" type="button" class="btn btn-primary" style="width: 100%;">수정</button>
+						</div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</dialog>
+
+	<script src="/static/js/copyUtil.js"></script>
+	<script src="/static/js/chatService.js"></script>
+	<script src="/static/js/viewService.js"></script>
+	<script src="/static/js/roomService.js"></script>
+	<script th:inline="javascript">
+		let Member 	= /*[[${member}]]*/ '';
+		let ChatRoom 	= /*[[${chatRoom}]]*/ '';
+
+		const infoTable			= document.querySelector('#infoTable');
+		const updateDialog		= document.querySelector('#updateDialog');
+		const closePopButton	= document.querySelector('#closePopButton');
+		const updateButton		= document.querySelector('#updateButton');
+		const updatePopupButton = document.querySelector('#updatePopupButton');
+
+		const viewElement		= document.querySelector('#viewElement');
+
+
+		function fnEventMapping() {
+
+			viewElement.addEventListener('dragenter', (event) => {
+				event.preventDefault();
+				viewElement.classList.add('focus');
+			});
+			viewElement.addEventListener('dragleave', (event) => {
+				viewElement.classList.remove('focus');
+			});
+			viewElement.addEventListener('dragover', (event) => {
+				event.preventDefault();
+				viewElement.classList.add('focus');
+			});
+			viewElement.addEventListener('drop', (event) => {
+				event.preventDefault();
+				const files = event.dataTransfer.files;
+				fnFileUpload(files);
+			});
+
+			try {
+				updatePopupButton.addEventListener('click', () => {
+					updateDialog.showModal();
+				});
+			} catch (e) {} // ignore
+
+			closePopButton.addEventListener('click', () => {
+				updateDialog.close();
+			});
+
+			updateButton.addEventListener('click', fnChatUpdate);
+		}
+
+
+		async function fnFileUpload(files) {
+
+			if (files.length === 0) {
+				return;
+			}
+
+			try {
+
+				let isUpload = true;
+
+				const bodyData = new FormData();
+
+				for (let i = 0; i < files.length; i++) {
+					bodyData.append('files', files[i]);
+				}
+
+				if (!isUpload) {
+					return;
+				}
+
+				const response = await fetch(`/chat/room/${ChatRoom.id}/upload`, {
+					method: 'POST',
+					body: bodyData,
+				});
+
+				const data = await response.json();
+
+				if (data.res_cd !== 'R0000') {
+					throw new Error(data.res_msg);
+				}
+
+			} catch (e) {
+				console.error(e);
+				alert('오류가 발생했습니다.');
+			} finally {
+				viewElement.classList.remove('focus');
+			}
+		}
+
+		async function fnChatUpdate() {
+
+			const members = [];
+
+			let name 			= document.querySelector('input[name=name]');
+			let access_members 	= document.querySelectorAll('input[name=access_member]:checked');
+			let status 			= document.querySelector('input[name=status]:checked');
+			let logViewYn 		= document.querySelector('input[name=logViewYn]:checked');
+
+			if(name.value === '') {
+				alert('이름을 설정해주세요.');
+				name.focus();
+				return;
+			}
+
+			if(logViewYn == null) {
+				alert('로그타입을 설정해주세요.');
+				return;
+			}
+
+			if(status == null) {
+				alert('활성화를 설정해주세요.');
+				return;
+			}
+
+			try {
+				members.push(Member.ip);
+				for(let i = 0 ; i < access_members.length ; i ++) {
+					members.push(access_members[i].value);
+				}
+
+				let bodyData = {
+					id : ChatRoom.id,
+					name : name.value,
+					status : status.value,
+					accessType : ChatRoom.accessType,
+					logViewYn : logViewYn.value,
+					accessMemberList : members,
+				};
+
+				const response = await fetch('/chat/room', {
+					method : 'PUT',
+					headers : {
+						'Content-Type' : 'application/json;charset=utf-8'
+					},
+					body : JSON.stringify(bodyData),
+				});
+
+				const data = await response.json();
+
+				if(data.res_cd !== 'R0000') {
+					throw new Error(data.res_msg);
+				}
+
+				alert('채팅방이 수정되었습니다.');
+				updateDialog.close();
+
+			} catch(e) {
+				console.error(e);
+				alert('오류가 발생했습니다.');
+			}
+		}
+
+		function fnChatRoomApply() {
+			if (ChatRoom == null) {
+				return;
+			}
+
+			fnApplyInfoTable();
+			fnApplyModalInfo();
+		}
+
+		function  fnApplyInfoTable() {
+			// InfoTable 처리
+			let trs = infoTable.querySelectorAll('tr');
+
+			for (let i = 0; i < trs.length; i++) {
+				const tr = trs[i];
+				const target = tr.querySelector('td');
+
+				switch (i) {
+					case 0 :
+						target.innerText = ChatRoom.name;
+						break;
+					case 1 :
+						target.innerText = ChatRoom.accessType;
+						break;
+					case 2 :
+						// removeChild
+						while (target.firstChild) {
+							target.firstChild.remove();
+						}
+
+						// appendChild
+						ChatRoom.accessMemberList.forEach(e => {
+							const spanTag = document.createElement('span');
+							spanTag.innerText = `#${e.name}`;
+							target.append(spanTag);
+						});
+						break;
+					case 3 :
+						target.innerHTML = '';
+						ChatRoom.liveMemberList.forEach(e => {
+							const markTag = document.createElement('mark');
+							markTag.innerText = e.name;
+							target.appendChild(markTag);
+						});
+
+						break;
+				}
+			}
+		}
+
+		function fnApplyModalInfo() {
+			// block 확인
+			fnBlockChatRoom();
+
+			const tbl = updateDialog.querySelector('table');
+			const trs = tbl.querySelectorAll('tr');
+
+			// 이름 갱신
+			let inpName = trs[0].querySelector('input[name=name]');
+			inpName.value = ChatRoom.name;
+
+			// 인원 갱신
+			let inpAccessMember	= trs[2].querySelectorAll('input[name=access_member]');
+			inpAccessMember.forEach(e => {
+				for(let i = 0 ; i < ChatRoom.accessMemberList.length ; i ++) {
+					let accessMember = ChatRoom.accessMemberList[i];
+					if(e.value === accessMember.ip) {
+						e.setAttribute('checked', 'checked');
+						e.setAttribute('disabled', 'disabled');
+					}
+				}
+			});
+
+			let index = 2;
+			if (ChatRoom.accessType !== 'ANY') { index = 3; }
+
+			// 로그타입 갱신
+			let inpLogViewYn = trs[index].querySelector('td').querySelectorAll('input[name=logViewYn]');
+			inpLogViewYn.forEach(e => e.removeAttribute('checked'));
+
+			if (ChatRoom.logViewYn === 'Y') {
+				inpLogViewYn[0].setAttribute('checked', 'checked');
+			} else {
+				inpLogViewYn[1].setAttribute('checked', 'checked');
+			}
+
+			index ++ ;
+
+			// 활성화 갱신
+			let inpStatus = trs[index].querySelector('td').querySelectorAll('input[name=status]');
+			inpStatus.forEach(e => e.removeAttribute('checked'));
+
+			if (ChatRoom.status === 'Y') {
+				inpStatus[0].setAttribute('checked', 'checked');
+			} else {
+				inpStatus[1].setAttribute('checked', 'checked');
+			}
+		}
+
+		function fnBlockChatRoom() {
+			if (ChatRoom.status === 'N') {
+				alert('입장할 수 없는 채팅방 입니다.');
+				location.href = '/chat/room';
+			}
+		}
+
+		function fnSubscribeChatRooms() {
+			const roomService = new RoomService('/stream/chat/rooms');
+			roomService.subscribe(function(data) {
+				try {
+					const json = JSON.parse(data);
+					if (json.length > 0) {
+						const chatRoomGroups = document.querySelector('#chatRoomGroups');
+						chatRoomGroups.innerHTML = '';
+
+						for (let i = 0; i < json.length; i++) {
+							const btn = document.createElement('button');
+							btn.classList.add('btn');
+							btn.classList.add('btn-sm');
+							btn.classList.add('me-2');
+							btn.innerText = json[i].chatRoomName;
+
+							if (ChatRoom.id == json[i].chatRoomId) {
+								btn.classList.add('btn-primary');
+								btn.setAttribute('title', '현재 채팅방 입니다.');
+								btn.setAttribute('disabled', 'disabled');
+							} else {
+								btn.classList.add('btn-secondary');
+								btn.addEventListener('click', () => {
+									location.href = `/chat/room/${json[i].chatRoomId}`;
+								});
+								btn.setAttribute('title', `클릭 시 ${json[i].chatRoomName} 으로 이동 합니다.`);
+							}
+							chatRoomGroups.appendChild(btn);
+						}
+					}
+				} catch(e) {}
+			});
+		}
+		
+		function fnLoadSkinBtn() {
+			const skinBtnGroup = document.querySelector('#skinBtnGroup');
+			const buttonAll = skinBtnGroup.querySelectorAll('button');
+			buttonAll.forEach(e => {
+				e.addEventListener('click', () => {
+					localStorage.setItem('skinHref', e.getAttribute('data-skin'));
+					fnApplySkin();
+				});
+			});
+		}
+
+		function fnApplySkin() {
+			const head = document.querySelector('head');
+			const href = localStorage.getItem('skinHref');
+
+			/* css 링크 초기화 */
+			head.querySelectorAll('link').forEach(e => {
+				if (e.getAttribute('custom') != null) {
+					e.parentNode.removeChild(e);
+				}
+			});
+
+			/* css 링크 추가 */
+			if (href != null && href != '') {
+				const link = document.createElement('link');
+				link.rel = 'stylesheet';
+				link.href = `/static/skin/${href}.css`;
+				link.setAttribute('custom', 'custom');
+				head.appendChild(link);
+
+				const target = document.querySelector('#viewElement');
+				setTimeout(() => {
+					target.scrollTop = target.scrollHeight;
+				}, 100);
+			}
+		}
+
+		fnEventMapping();
+		fnChatRoomApply();
+		fnPrevMessage();
+		fnConnect();
+		fnKeyMapping();
+		fnSubscribeChatRooms();
+		fnLoadSkinBtn();
+		fnApplySkin();
+	</script>
+</body>
+</html>

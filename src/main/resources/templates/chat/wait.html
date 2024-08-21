@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>링크챗</title>
+	<link th:href="@{/webjars/bootstrap/5.0.1/css/bootstrap.min.css}" rel="stylesheet">
+</head>
+<body>
+	<div class="container">
+		<div class="row">
+			<h4>입장 가능 채팅방</h4>
+			<table class="table">
+				<thead>
+					<tr>
+						<th>No</th>
+						<td>이름</td>
+						<td>접근타입</td>
+						<td>인원</td>
+						<td></td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="myChatRoom, num : ${myChatRoomList}">
+						<td th:text="${num.index}"></td>
+						<td>
+							<strong th:text="${myChatRoom.name}"></strong>
+						</td>
+						<td>
+							<span th:text="${myChatRoom.accessType}"></span>
+						</td>
+						<td>
+							<span th:each="memberEach : ${myChatRoom.accessMemberList}" th:text="|#${memberEach.name} |"></span>
+						</td>
+						<td>
+							<button class="btn btn-primary joinRoomButton" th:data-room-id="${myChatRoom.id}">입장</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		
+		<div class="row">
+			<button type="button" id="createPopButton" class="btn btn-warning">채팅방 생성</button>
+		</div>
+	</div>
+	
+	<dialog id="createDialog" style="width:850px; height:700px;">
+		<h5>채팅방 생성</h5>
+		<table class="table">
+			<tr>
+				<th>이름</th>
+				<td><input type="text" maxlength="20" name="name" class="form-control"></td>
+			</tr>
+			<tr>
+				<th>타입</th>
+				<td>
+					<input type="radio" name="accessType" id="access_p" th:value="${AccessTypePRO.code}" checked="checked" class="form-check-input">
+					<label for="access_p" class="form-check-label" th:text="${AccessTypePRO}"></label>
+					<input type="radio" name="accessType" id="access_a" th:value="${AccessTypeANY.code}" class="form-check-input">
+					<label for="access_a" class="form-check-label" th:text="${AccessTypeANY}"></label>
+				</td>
+			</tr>
+			<tr>
+				<th>인원</th>
+				<td>
+					<p th:each="memberEach, num : ${memberList}" th:if="${memberEach.ip != member.ip}">
+						<input type="checkbox" th:id="|${num.index}_id|" name="access_member" th:value="${memberEach.ip}" class="form-check-input">
+						<label th:for="|${num.index}_id|" th:text="${memberEach.name}" class="form-check-label"></label>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th title="선택 시, 방에 입장한 회원이 이전 메시지 내역을 볼 수 있습니다.">메시지내역</th>
+				<td>
+					<input type="radio" name="logViewYn" id="logViewYn_Y" value="Y" checked="checked" class="form-check-input">
+					<label for="logViewYn_Y" class="form-check-label">사용</label>
+					<input type="radio" name="logViewYn" id="logViewYn_N" value="N" class="form-check-input">
+					<label for="logViewYn_N" class="form-check-label">미사용</label>
+				</td>
+			</tr>
+			<tr>
+				<th>활성화</th>
+				<td>
+					<input type="radio" name="status" id="status_y" value="Y" checked="checked" class="form-check-input">
+					<label for="status_y" class="form-check-label">활성</label>
+					<input type="radio" name="status" id="status_n" value="N" class="form-check-input">
+					<label for="status_n" class="form-check-label">비활성</label>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<div class="row">
+						<div class="col">
+							<button id="closePopButton" type="button" class="btn btn-danger" style="width: 100%;">닫기</button>
+						</div>
+						<div class="col">
+							<button id="createButton" type="button" class="btn btn-primary" style="width: 100%;">생성</button>
+						</div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</dialog>
+	
+	<script th:inline="javascript">
+		const Member = /*[[${member}]]*/ '';
+		
+		const createPopButton 	= document.querySelector('#createPopButton');
+		const createDialog 		= document.querySelector('#createDialog');
+		const createButton 		= document.querySelector('#createButton');
+		const closePopButton 	= document.querySelector('#closePopButton');
+		const accessType 		= document.querySelectorAll('input[name=accessType]');
+		const joinRoomButtonAll	= document.querySelectorAll('.joinRoomButton');
+
+		[].forEach.call(joinRoomButtonAll, (element) => {
+			element.addEventListener('click', joinRoom);
+		});
+
+		createPopButton.addEventListener('click', () => {
+			createDialog.showModal();
+		});
+		
+		closePopButton.addEventListener('click', () => {
+			createDialog.close();
+		});
+		createButton.addEventListener('click', createChatRoom);
+
+		[].forEach.call(accessType, (element) => {
+			element.addEventListener('change', changeAccessType);
+		});
+		
+		async function createChatRoom() {
+			const members = new Array();
+			
+			let name 			= document.querySelector('input[name=name]');
+			let access_type 	= document.querySelector('input[name=accessType]:checked');
+			let access_members 	= document.querySelectorAll('input[name=access_member]:checked');
+			let status 			= document.querySelector('input[name=status]:checked');
+			let logViewYn 		= document.querySelector('input[name=logViewYn]:checked');
+
+			if(name.value === '') {
+				alert('이름을 설정해주세요.');
+				name.focus();
+				return;
+			}
+			
+			if(access_type == null) {
+				alert('채팅방 타입을 설정해주세요.');
+				return;
+			}
+			
+			if(access_type.value === 'PROTECTED' ) {
+				if(access_members.length === 0) {
+					alert('인원을 설정해주세요.');
+					return;
+				}
+			}
+
+			if(logViewYn == null) {
+				alert('로그타입을 설정해주세요.');
+				return;
+			}
+			
+			if(status == null) {
+				alert('활성화를 설정해주세요.');
+				return;
+			}
+			
+			try {
+				members.push(Member.ip);
+				for(let i = 0 ; i < access_members.length ; i ++) {
+					members.push(access_members[i].value);
+				}
+				
+				let bodyData = {
+					name : name.value,
+					accessType : access_type.value,
+					logViewYn : logViewYn.value,
+					status : status.value,
+					accessMemberList : members,
+					messageList : new Array(),
+				};
+				
+				const response = await fetch('/chat/room', {
+					method : 'POST',
+					headers : {
+						'Content-Type' : 'application/json;charset=utf-8'
+					},
+					body : JSON.stringify(bodyData),
+				});
+				
+				const data = await response.json();
+				
+				if(data.res_cd !== 'R0000') {
+					throw new Error(data.res_msg);
+				}
+
+				alert('채팅방이 생성되었습니다.');
+				createDialog.close();
+				location.reload();
+				
+			} catch(e) {
+				console.error(e);
+				alert('오류가 발생했습니다.');
+			}
+		}
+
+		function changeAccessType(event) {
+			const value = event.target.value;
+			const access_members = document.querySelectorAll('input[name=access_member]');
+			let isDisabled = true;
+
+			switch(value) {
+				case 'ANY' : 		isDisabled = true; 	break;
+				case 'PROTECTED' : 	isDisabled = false; break;
+			}
+
+			[].forEach.call(access_members, (element) => {
+				if(isDisabled) {
+					element.disabled = true;
+				} else {
+					element.disabled = false;
+				}
+			});
+		}
+
+		function joinRoom(event) {
+			const target = event.target;
+			const dataRoomId = target.getAttribute('data-room-id');
+
+			location.href = `/chat/room/${dataRoomId}`;
+		}
+	</script>
+</body>
+</html>
